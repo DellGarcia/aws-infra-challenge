@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Modelo de CloudFormation para criar um Launch Template com Amazon Linux 2.'
+
+Parameters:
+  InstanceType:
+    Description: Tipo de instância EC2 para o Launch Template
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+    ConstraintDescription: Deve ser um tipo de instância EC2 válido.
+
+  KeyName:
+    Description: Nome de um KeyPair EC2 existente para acesso SSH
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Deve ser o nome de um KeyPair EC2 existente.
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+Resources:
+  MyLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: my-simple-launch-template
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiId
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyName
+        BlockDeviceMappings:
+          - DeviceName: /dev/sda1
+            Ebs:
+              VolumeSize: 8
+        UserData: !Base64
+          Fn::Sub: |
+            #!/bin/bash
+            yum update
+            yum install docker
+
+            # Install docker compose
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.33.1/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
+            sudo mv /usr/local/bin/docker-compose /usr/bin/docker-compose
+            sudo chmod +x /usr/bin/docker-compose      
+
+            # Retrive github secret
+            SECRET_NAME="aws_infra_challenge_pat"
+            REGION="us-east-1"
+            GITHUB_PAT=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
+
+            # Clone github repository
+            git clone https://DellGarcia:$GITHUB_PAT/DellGarcia/aws-infra-challenge.git
+            cd aws-infra-challenge
+
+            # Start docker compose
+            docker compose up -d
+            
+
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: PB- JUL 2025
+              - Key: CostCenter
+                Value: C092000024
+              - Key: Project
+                Value: PB- JUL 2025
+          - ResourceType: volume
+            Tags:
+              - Key: Name
+                Value: PB- JUL 2025
+              - Key: CostCenter
+                Value: C092000024
+              - Key: Project
+                Value: PB- JUL 2025 
