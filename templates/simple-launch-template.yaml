@@ -20,7 +20,43 @@ Parameters:
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 
 Resources:
-  MyLaunchTemplate:
+  # 1. Política do IAM para acesso ao Secrets Manager
+  SecretsManagerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: 'EC2SecretsManagerAccessPolicy'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: 'secretsmanager:GetSecretValue'
+            # Substitua 'seu-id-da-conta' e 'sua-regiao'
+            Resource: 'arn:aws:secretsmanager:us-east-1:809808680701:secret:aws_infra_challenge_pat-9RX6H9'
+      Roles:
+        - !Ref EC2Role
+
+  # 2. Role do IAM que a instância EC2 irá assumir
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: 'EC2SecretsManagerAccessRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'ec2.amazonaws.com'
+            Action: 'sts:AssumeRole'
+
+  # 3. InstanceProfile para anexar a Role à instância EC2
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: 'EC2SecretsManagerAccessProfile'
+      Roles:
+        - !Ref EC2Role
+  
+  EC2LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
       LaunchTemplateName: my-simple-launch-template
@@ -28,15 +64,15 @@ Resources:
         ImageId: !Ref LatestAmiId
         InstanceType: !Ref InstanceType
         KeyName: !Ref KeyName
-        BlockDeviceMappings:
-          - DeviceName: /dev/sda1
-            Ebs:
-              VolumeSize: 8
+        IamInstanceProfile:
+          Name: !Ref EC2InstanceProfile
         UserData: !Base64
           Fn::Sub: |
             #!/bin/bash
-            yum update
-            yum install docker
+            yum update -y
+            yum install docker git jq -y
+
+            systemctl start docker
 
             # Install docker compose
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.33.1/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
@@ -47,13 +83,14 @@ Resources:
             SECRET_NAME="aws_infra_challenge_pat"
             REGION="us-east-1"
             GITHUB_PAT=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
+            PAT=$(echo "$GITHUB_PAT" | jq -r '.github_pat')
 
             # Clone github repository
-            git clone https://DellGarcia:$GITHUB_PAT/DellGarcia/aws-infra-challenge.git
+            git clone https://DellGarcia:$PAT@github.com/DellGarcia/aws-infra-challenge.git
             cd aws-infra-challenge
 
             # Start docker compose
-            docker compose up -d
+            docker-compose up -d
             
 
         TagSpecifications:
