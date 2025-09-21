@@ -273,11 +273,12 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+      VpcId: !Ref VPC
 
   Outputs:
     URL:
       Description: The URL of the website
       Value: !Join
         - ""
-        - - https://
+        - - http://
           - !GetAtt ElasticLoadBalancer.DNSName
