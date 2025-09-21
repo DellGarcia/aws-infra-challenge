@@ -275,10 +275,10 @@ Resources:
           SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
       VpcId: !Ref VPC
 
-  Outputs:
-    URL:
-      Description: The URL of the website
-      Value: !Join
-        - ""
-        - - http://
-          - !GetAtt ElasticLoadBalancer.DNSName
+Outputs:
+  URL:
+    Description: The URL of the website
+    Value: !Join
+      - ""
+      - - http://
+        - !GetAtt ElasticLoadBalancer.DNSName
