@@ -1,0 +1,274 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Modelo de CloudFormation para criar um Launch Template com Amazon Linux 2.'
+
+Parameters:
+  InstanceType:
+    Description: Tipo de instância EC2 para o Launch Template
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+    ConstraintDescription: Deve ser um tipo de instância EC2 válido.
+
+  KeyName:
+    Description: Nome de um KeyPair EC2 existente para acesso SSH
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Deve ser o nome de um KeyPair EC2 existente.
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+  Subnets:
+    Description: Subnets to be used
+    Type: List<AWS::EC2::Subnet::Id>
+
+  AZs:
+    Description: Availability Zones to be used
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+
+  VPC:
+    Description: VPC to be used
+    Type: AWS::EC2::VPC::Id
+
+Resources:
+  # 1. Política do IAM para acesso ao Secrets Manager
+  SecretsManagerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: 'EC2SecretsManagerAccessPolicy'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: 'secretsmanager:GetSecretValue'
+            # Substitua 'seu-id-da-conta' e 'sua-regiao'
+            Resource: 'arn:aws:secretsmanager:us-east-1:809808680701:secret:aws_infra_challenge_pat-9RX6H9'
+      Roles:
+        - !Ref EC2Role
+
+  # 2. Role do IAM que a instância EC2 irá assumir
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: 'EC2SecretsManagerAccessRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'ec2.amazonaws.com'
+            Action: 'sts:AssumeRole'
+
+  # 3. InstanceProfile para anexar a Role à instância EC2
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: 'EC2SecretsManagerAccessProfile'
+      Roles:
+        - !Ref EC2Role
+  
+  EC2LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: my-simple-launch-template
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiId
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyName
+        IamInstanceProfile:
+          Name: !Ref EC2InstanceProfile
+        UserData: !Base64
+          Fn::Sub: |
+            #!/bin/bash
+            yum update -y
+            yum install docker git jq -y
+
+            systemctl start docker
+
+            # Install docker compose
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.33.1/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
+            sudo mv /usr/local/bin/docker-compose /usr/bin/docker-compose
+            sudo chmod +x /usr/bin/docker-compose      
+
+            # Retrive github secret
+            SECRET_NAME="aws_infra_challenge_pat"
+            REGION="us-east-1"
+            GITHUB_PAT=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
+            PAT=$(echo "$GITHUB_PAT" | jq -r '.github_pat')
+
+            # Clone github repository
+            git clone https://DellGarcia:$PAT@github.com/DellGarcia/aws-infra-challenge.git
+            cd aws-infra-challenge
+
+            # Start docker compose
+            docker-compose up -d
+            
+
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: PB- JUL 2025
+              - Key: CostCenter
+                Value: C092000024
+              - Key: Project
+                Value: PB- JUL 2025
+          - ResourceType: volume
+            Tags:
+              - Key: Name
+                Value: PB- JUL 2025
+              - Key: CostCenter
+                Value: C092000024
+              - Key: Project
+                Value: PB- JUL 2025
+
+  # Auto Scaling
+  EC2AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT5M
+        Count: 1
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 1
+        PauseTime: PT5M
+        WaitOnResourceSignals: true
+    Properties:
+      AvailabilityZones: !Ref AZs
+      LaunchTemplate:
+        LaunchTemplateId: !Ref EC2LaunchTemplate
+        Version: !GetAtt EC2LaunchTemplate.LatestVersionNumber
+      MinSize: "2"
+      MaxSize: "4"
+      TargetGroupARNs:
+        - !Ref TargetGroup
+      HealthCheckType: ELB
+      VPCZoneIdentifier: !Ref Subnets
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /
+      Name: MyTargetGroup
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      VpcId: !Ref VPC
+
+  # Politicas de Escalonamento
+  WebServerScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref EC2AutoScalingGroup
+      Cooldown: "60"
+      ScalingAdjustment: 1
+
+  WebServerScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref EC2AutoScalingGroup
+      Cooldown: "60"
+      ScalingAdjustment: -1
+  
+  # Alarmes / Triggers
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-up if CPU > 90% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 90
+      AlarmActions:
+        - !Ref WebServerScaleUpPolicy
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref EC2AutoScalingGroup
+      ComparisonOperator: GreaterThanThreshold
+
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-down if CPU < 70% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 70
+      AlarmActions:
+        - !Ref WebServerScaleDownPolicy
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref EC2AutoScalingGroup
+      ComparisonOperator: LessThanThreshold
+
+  # Load Balancer
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+      Subnets: !Ref Subnets
+      Type: application
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows inbound traffic on port 80
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref VPC
+
+  # Talvez precise ajustar devido ao HTTPS
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref ElasticLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      # SslPolicy: ELBSecurityPolicy-2016-08
+      # Certificates:
+      #   - CertificateArn: !Ref CertificateArn
+
+
+  # Revisar
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      guard:
+        SuppressedRules:
+          - INCOMING_SSH_DISABLED
+    Properties:
+      GroupDescription: Enable SSH access and HTTP from the load balancer only
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+
+  Outputs:
+    URL:
+      Description: The URL of the website
+      Value: !Join
+        - ""
+        - - https://
+          - !GetAtt ElasticLoadBalancer.DNSName
