@@ -91,7 +91,7 @@ Resources:
           Fn::Sub: |
             #!/bin/bash
             yum update -y
-            yum install docker git jq -y
+            yum install docker git jq aws-cfn-bootstrap -y
 
             systemctl start docker
 
@@ -112,7 +112,9 @@ Resources:
 
             # Start docker compose
             docker-compose up -d
-            
+
+            # Enviar sinal de sucesso para o CloudFormation
+            /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource EC2AutoScalingGroup --region ${AWS::Region}
 
         TagSpecifications:
           - ResourceType: instance
