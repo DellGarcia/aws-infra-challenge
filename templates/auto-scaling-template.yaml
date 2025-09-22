@@ -19,6 +19,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 
+  VPC:
+    Description: VPC to be used
+    Type: AWS::EC2::VPC::Id
+
   Subnets:
     Description: Subnets to be used
     Type: List<AWS::EC2::Subnet::Id>
@@ -27,9 +31,10 @@ Parameters:
     Description: Availability Zones to be used
     Type: List<AWS::EC2::AvailabilityZone::Name>
 
-  VPC:
-    Description: VPC to be used
-    Type: AWS::EC2::VPC::Id
+  SecurityGroups:
+    Description: Security Groups to be used
+    Type: List<AWS::EC2::SecurityGroup::Id>
+
 
   SSHLocation:
     Description: The IP address range that can be used to SSH to the EC2 instances
@@ -84,6 +89,7 @@ Resources:
       LaunchTemplateData:
         ImageId: !Ref LatestAmiId
         InstanceType: !Ref InstanceType
+        SecurityGroupIds: !Ref SecurityGroups
         KeyName: !Ref KeyName
         IamInstanceProfile:
           Name: !Ref EC2InstanceProfile
@@ -164,7 +170,7 @@ Resources:
     Properties:
       HealthCheckPath: /
       Name: MyTargetGroup
-      Port: 80
+      Port: 8080
       Protocol: HTTP
       TargetType: instance
       VpcId: !Ref VPC
