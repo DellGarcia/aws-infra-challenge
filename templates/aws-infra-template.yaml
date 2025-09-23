@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Modelo de CloudFormation para criar um Launch Template com Amazon Linux 2.'
+Description: 'Modelo de CloudFormation para conctruir parte de uma infraestrutura na AWS'
 
 Parameters:
   InstanceType:
@@ -23,7 +23,11 @@ Parameters:
     Description: VPC to be used
     Type: AWS::EC2::VPC::Id
 
-  Subnets:
+  PublicSubnets:
+    Description: Subnets to be used
+    Type: List<AWS::EC2::Subnet::Id>
+
+  PrivateSubnets:
     Description: Subnets to be used
     Type: List<AWS::EC2::Subnet::Id>
 
@@ -39,14 +43,58 @@ Parameters:
   SSHLocation:
     Description: The IP address range that can be used to SSH to the EC2 instances
     Type: String
-    Default: 192.168.1.0/24
+    Default: 0.0.0.0/0
     MinLength: 9
     MaxLength: 18
     AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
 
 Resources:
-  # 1. Política do IAM para acesso ao Secrets Manager
+  ### Security Groups
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows inbound traffic on port 80
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref VPC
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      guard:
+        SuppressedRules:
+          - INCOMING_SSH_DISABLED
+    Properties:
+      GroupDescription: Enable SSH access and HTTP from the load balancer only
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+      VpcId: !Ref VPC
+
+  EFSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable NFS access from EC2
+      SecurityGroupIngress:
+        - FromPort: "2049"
+          IpProtocol: tcp
+          ToPort: "2049"
+          SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
+      VpcId: !Ref VPC
+
+  ### FIM
+
+  ### Secrets Manager
   SecretsManagerPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -56,12 +104,10 @@ Resources:
         Statement:
           - Effect: Allow
             Action: 'secretsmanager:GetSecretValue'
-            # Substitua 'seu-id-da-conta' e 'sua-regiao'
             Resource: 'arn:aws:secretsmanager:us-east-1:809808680701:secret:aws_infra_challenge_pat-9RX6H9'
       Roles:
         - !Ref EC2Role
 
-  # 2. Role do IAM que a instância EC2 irá assumir
   EC2Role:
     Type: AWS::IAM::Role
     Properties:
@@ -74,14 +120,63 @@ Resources:
               Service: 'ec2.amazonaws.com'
             Action: 'sts:AssumeRole'
 
-  # 3. InstanceProfile para anexar a Role à instância EC2
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       InstanceProfileName: 'EC2SecretsManagerAccessProfile'
       Roles:
         - !Ref EC2Role
+  ### FIM 
+
+  ### EFS
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      PerformanceMode: generalPurpose
+
+  EFSMountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SecurityGroups:
+        - !GetAtt EFSSecurityGroup.GroupId
+      SubnetId: !Select
+        - 0
+        - !Ref Subnets
+
+  EFSMountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SecurityGroups:
+        - !GetAtt EFSSecurityGroup.GroupId
+      SubnetId: !Select
+        - 1
+        - !Ref Subnets
+
+  EFSMountTarget3:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SecurityGroups:
+        - !GetAtt EFSSecurityGroup.GroupId
+      SubnetId: !Select
+        - 2
+        - !Ref Subnets
   
+  EFSMountTarget4:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SecurityGroups:
+        - !GetAtt EFSSecurityGroup.GroupId
+      SubnetId: !Select
+        - 3
+        - !Ref Subnets
+  ### FIM
+
+  ### Launch Template / Auto Scaling / Load Balancer / Target Group
   EC2LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
@@ -89,17 +184,28 @@ Resources:
       LaunchTemplateData:
         ImageId: !Ref LatestAmiId
         InstanceType: !Ref InstanceType
-        SecurityGroupIds: !Ref SecurityGroups
+        SecurityGroupIds: !Ref InstanceSecurityGroup
         KeyName: !Ref KeyName
         IamInstanceProfile:
           Name: !Ref EC2InstanceProfile
         UserData: !Base64
           Fn::Sub: |
             #!/bin/bash
-            yum update -y
+            # yum update -y
             yum install docker git jq aws-cfn-bootstrap -y
 
-            systemctl start docker
+            # EFS Config
+            export LC_CTYPE=en_US.UTF-8
+            export LC_ALL=en_US.UTF-8
+            yum install curl nfs-common -y
+            EC2_REGION=${AWS::Region}
+            DIR_TGT=/mnt/efs/
+            EFS_FILE_SYSTEM_ID=${EFSFileSystem}
+            mkdir -p $DIR_TGT
+            DIR_SRC=$EFS_FILE_SYSTEM_ID.efs.$EC2_REGION.amazonaws.com
+            mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $DIR_SRC:/ $DIR_TGT
+
+            # systemctl start docker
 
             # Install docker compose
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.33.1/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
@@ -107,19 +213,25 @@ Resources:
             sudo chmod +x /usr/bin/docker-compose      
 
             # Retrive github secret
-            SECRET_NAME="aws_infra_challenge_pat"
-            REGION="us-east-1"
-            GITHUB_PAT=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
-            PAT=$(echo "$GITHUB_PAT" | jq -r '.github_pat')
+            #SECRET_NAME="aws_infra_challenge_pat"
+            #REGION="us-east-1"
+            #GITHUB_PAT=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
+            #PAT=$(echo "$GITHUB_PAT" | jq -r '.github_pat')
 
             # Clone github repository
-            git clone https://DellGarcia:$PAT@github.com/DellGarcia/aws-infra-challenge.git
-            cd aws-infra-challenge
+            #git clone https://DellGarcia:$PAT@github.com/DellGarcia/aws-infra-challenge.git
+            #cd aws-infra-challenge
 
             # Start docker compose
-            docker-compose up -d
+            # docker-compose up -d
 
-            # Enviar sinal de sucesso para o CloudFormation
+            # yum update -y
+            yum install -y httpd
+            systemctl start httpd
+            systemctl enable httpd
+            echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html
+
+            # Success Signal for CloudFormation
             /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource EC2AutoScalingGroup --region ${AWS::Region}
 
         TagSpecifications:
@@ -158,19 +270,21 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: !Ref EC2LaunchTemplate
         Version: !GetAtt EC2LaunchTemplate.LatestVersionNumber
-      MinSize: "2"
-      MaxSize: "4"
+      MinSize: "1"
+      MaxSize: "1"
       TargetGroupARNs:
         - !Ref TargetGroup
       HealthCheckType: ELB
-      VPCZoneIdentifier: !Ref Subnets
+      HealthCheckGracePeriod: 600
+      VPCZoneIdentifier: !Ref PrivateSubnets
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckPath: /
-      Name: MyTargetGroup
-      Port: 8080
+      HealthCheckTimeoutSeconds: 10
+      Name: AWSInfraTargetGroup
+      Port: 80
       Protocol: HTTP
       TargetType: instance
       VpcId: !Ref VPC
@@ -234,19 +348,8 @@ Resources:
       Scheme: internet-facing
       SecurityGroups:
         - !Ref LoadBalancerSecurityGroup
-      Subnets: !Ref Subnets
+      Subnets: !Ref PublicSubnets
       Type: application
-
-  LoadBalancerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allows inbound traffic on port 80
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-      VpcId: !Ref VPC
 
   # Talvez precise ajustar devido ao HTTPS
   LoadBalancerListener:
@@ -263,25 +366,7 @@ Resources:
       #   - CertificateArn: !Ref CertificateArn
 
 
-  # Revisar
-  InstanceSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Metadata:
-      guard:
-        SuppressedRules:
-          - INCOMING_SSH_DISABLED
-    Properties:
-      GroupDescription: Enable SSH access and HTTP from the load balancer only
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: !Ref SSHLocation
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
-      VpcId: !Ref VPC
+  
 
 Outputs:
   URL:
