@@ -24,21 +24,16 @@ Parameters:
     Type: AWS::EC2::VPC::Id
 
   PublicSubnets:
-    Description: Subnets to be used
+    Description: Inform two public Subnets for LoadBalancer
     Type: List<AWS::EC2::Subnet::Id>
 
   PrivateSubnets:
-    Description: Subnets to be used
+    Description: Inform two private Subnets for Auto Scaling
     Type: List<AWS::EC2::Subnet::Id>
 
-  AZs:
-    Description: Availability Zones to be used
-    Type: List<AWS::EC2::AvailabilityZone::Name>
-
-  SecurityGroups:
-    Description: Security Groups to be used
-    Type: List<AWS::EC2::SecurityGroup::Id>
-
+  PrivateDataSubnets:
+    Description: Inform two private Subnets for data
+    Type: List<AWS::EC2::Subnet::Id>
 
   SSHLocation:
     Description: The IP address range that can be used to SSH to the EC2 instances
@@ -86,46 +81,46 @@ Resources:
     Properties:
       GroupDescription: Enable NFS access from EC2
       SecurityGroupIngress:
-        - FromPort: "2049"
+        - FromPort: 2049
           IpProtocol: tcp
-          ToPort: "2049"
+          ToPort: 2049
           SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
       VpcId: !Ref VPC
 
   ### FIM
 
   ### Secrets Manager
-  SecretsManagerPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: 'EC2SecretsManagerAccessPolicy'
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action: 'secretsmanager:GetSecretValue'
-            Resource: 'arn:aws:secretsmanager:us-east-1:809808680701:secret:aws_infra_challenge_pat-9RX6H9'
-      Roles:
-        - !Ref EC2Role
+  # SecretsManagerPolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyName: 'EC2SecretsManagerAccessPolicy'
+  #     PolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: 'secretsmanager:GetSecretValue'
+  #           Resource: 'arn:aws:secretsmanager:us-east-1:809808680701:secret:aws_infra_challenge_pat-9RX6H9'
+  #     Roles:
+  #       - !Ref EC2Role
 
-  EC2Role:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: 'EC2SecretsManagerAccessRole'
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: 'ec2.amazonaws.com'
-            Action: 'sts:AssumeRole'
+  # EC2Role:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     RoleName: 'EC2SecretsManagerAccessRole'
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: 'ec2.amazonaws.com'
+  #           Action: 'sts:AssumeRole'
 
-  EC2InstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      InstanceProfileName: 'EC2SecretsManagerAccessProfile'
-      Roles:
-        - !Ref EC2Role
+  # EC2InstanceProfile:
+  #   Type: AWS::IAM::InstanceProfile
+  #   Properties:
+  #     InstanceProfileName: 'EC2SecretsManagerAccessProfile'
+  #     Roles:
+  #       - !Ref EC2Role
   ### FIM 
 
   ### EFS
@@ -143,7 +138,7 @@ Resources:
         - !GetAtt EFSSecurityGroup.GroupId
       SubnetId: !Select
         - 0
-        - !Ref Subnets
+        - !Ref PrivateDataSubnets
 
   EFSMountTarget2:
     Type: AWS::EFS::MountTarget
@@ -153,54 +148,35 @@ Resources:
         - !GetAtt EFSSecurityGroup.GroupId
       SubnetId: !Select
         - 1
-        - !Ref Subnets
-
-  EFSMountTarget3:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref EFSFileSystem
-      SecurityGroups:
-        - !GetAtt EFSSecurityGroup.GroupId
-      SubnetId: !Select
-        - 2
-        - !Ref Subnets
-  
-  EFSMountTarget4:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref EFSFileSystem
-      SecurityGroups:
-        - !GetAtt EFSSecurityGroup.GroupId
-      SubnetId: !Select
-        - 3
-        - !Ref Subnets
+        - !Ref PrivateDataSubnets
   ### FIM
 
   ### Launch Template / Auto Scaling / Load Balancer / Target Group
   EC2LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: my-simple-launch-template
+      LaunchTemplateName: AWS-Infra-LT
       LaunchTemplateData:
         ImageId: !Ref LatestAmiId
         InstanceType: !Ref InstanceType
-        SecurityGroupIds: !Ref InstanceSecurityGroup
+        SecurityGroupIds: 
+          - !Ref InstanceSecurityGroup
         KeyName: !Ref KeyName
-        IamInstanceProfile:
-          Name: !Ref EC2InstanceProfile
+        # IamInstanceProfile:
+        #   Name: !Ref EC2InstanceProfile
         UserData: !Base64
           Fn::Sub: |
             #!/bin/bash
             # yum update -y
-            yum install docker git jq aws-cfn-bootstrap -y
+            yum install -y docker git jq aws-cfn-bootstrap amazon-efs-utils
 
             # EFS Config
             export LC_CTYPE=en_US.UTF-8
             export LC_ALL=en_US.UTF-8
-            yum install curl nfs-common -y
-            EC2_REGION=${AWS::Region}
-            DIR_TGT=/mnt/efs/
-            EFS_FILE_SYSTEM_ID=${EFSFileSystem}
+            EC2_REGION="us-east-1"
+            DIR_TGT="/mnt/efs/"
+            EFS_FILE_SYSTEM_ID=fs-0dbe3078a61d069cb
+            # EFS_FILE_SYSTEM_ID=${EFSFileSystem}
             mkdir -p $DIR_TGT
             DIR_SRC=$EFS_FILE_SYSTEM_ID.efs.$EC2_REGION.amazonaws.com
             mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $DIR_SRC:/ $DIR_TGT
@@ -257,16 +233,15 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     CreationPolicy:
       ResourceSignal:
-        Timeout: PT5M
-        Count: 1
+        Timeout: PT10M
+        Count: 0
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
         MaxBatchSize: 1
-        PauseTime: PT5M
+        PauseTime: PT10M
         WaitOnResourceSignals: true
     Properties:
-      AvailabilityZones: !Ref AZs
       LaunchTemplate:
         LaunchTemplateId: !Ref EC2LaunchTemplate
         Version: !GetAtt EC2LaunchTemplate.LatestVersionNumber
@@ -282,7 +257,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckPath: /
-      HealthCheckTimeoutSeconds: 10
+      HealthCheckTimeoutSeconds: 20
       Name: AWSInfraTargetGroup
       Port: 80
       Protocol: HTTP
@@ -351,7 +326,6 @@ Resources:
       Subnets: !Ref PublicSubnets
       Type: application
 
-  # Talvez precise ajustar devido ao HTTPS
   LoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -361,11 +335,6 @@ Resources:
       LoadBalancerArn: !Ref ElasticLoadBalancer
       Port: 80
       Protocol: HTTP
-      # SslPolicy: ELBSecurityPolicy-2016-08
-      # Certificates:
-      #   - CertificateArn: !Ref CertificateArn
-
-
   
 
 Outputs:
