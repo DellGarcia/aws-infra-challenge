@@ -47,7 +47,7 @@ Resources:
       ThroughputMode: 'bursting'
       FileSystemTags:
         - Key: Name
-          Value: 'MyEFS'
+          Value: 'AWS-Infra-FS'
 
   # Crie o primeiro mount target na Subnet 1
   MountTargetSubnet1:

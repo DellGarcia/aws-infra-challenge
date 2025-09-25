@@ -129,6 +129,10 @@ Resources:
     Properties:
       Encrypted: true
       PerformanceMode: generalPurpose
+      ThroughputMode: bursting
+      FileSystemTags:
+        - Key: Name
+          Value: AWS-Infra-FS
 
   EFSMountTarget1:
     Type: AWS::EFS::MountTarget
@@ -139,6 +143,7 @@ Resources:
       SubnetId: !Select
         - 0
         - !Ref PrivateDataSubnets
+    DependsOn: EFSFileSystem
 
   EFSMountTarget2:
     Type: AWS::EFS::MountTarget
@@ -149,6 +154,7 @@ Resources:
       SubnetId: !Select
         - 1
         - !Ref PrivateDataSubnets
+    DependsOn: EFSFileSystem
   ### FIM
 
   ### Launch Template / Auto Scaling / Load Balancer / Target Group
