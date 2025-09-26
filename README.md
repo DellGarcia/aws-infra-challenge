@@ -21,8 +21,11 @@ Obs: É importante lembrar que os recursos criados aqui vão gerar custos, entã
 
 ## VPC e Subnets
     
-* O que é uma VPC:
-    * Uma VPC é um serviço da AWS que permite criar uma rede isolada e privada, que servirá como uma espécie de "agrupamento" para os demais recursos que serão criados, uma VPC atua dentro de uma AWS Region, ou seja, se criada em uma região por exemplo "us-east-1" ela não será visível em outras regiões, para este projeto utilzei us-east-1.
+Uma VPC é um serviço da AWS que permite criar uma rede isolada e privada, uma VPC atua dentro de uma AWS Region, ou seja, se criada em uma região por exemplo "us-east-1" ela não será visível em outras regiões, para este projeto utilzei "us-east-1".
 
-    **Obs: alguns serviços não estão disponíveis em todas as regiões da AWS**.
-*
+**Obs: alguns serviços não estão disponíveis em todas as regiões da AWS**.
+
+### Como criar a VPC e Subnets
+
+Felizmente esse é um passo bem tranquilo a AWS já oferece um forma de automatizar isso bem simples.
+
