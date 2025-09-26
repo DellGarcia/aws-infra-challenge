@@ -51,7 +51,7 @@ Com isso será criado a VPC com 2 subnets públicas cada uma com 1 NAT Gateway, 
 4. Database
 5. EFS
 
-
+<img width="896" height="348" alt="image" src="https://github.com/user-attachments/assets/4be01dcd-9313-4d40-9467-b949a90eafb9" />
 
 
 
