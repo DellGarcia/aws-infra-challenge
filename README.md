@@ -57,6 +57,15 @@ O Bastion será o meio disponibilizado para acessar as instancias privadas via S
 
 <img width="896" height="348" alt="image" src="https://github.com/user-attachments/assets/271da61c-d069-4bbb-bdea-acf5a9f926c5" />
 
+### 2 - Load Balancer Security Group
+Esse security group será resposável por permitir acesso HTTP ao Load Balancer de qualquer endereço IPv4. A regra ficará como demonstrado na imagem abaixo:
+
+<img width="896" height="348" alt="image" src="https://github.com/user-attachments/assets/ec247420-07e1-4f3f-8172-905244bd5637" />
+
+### 3- Instance Security Group
+Grupo de segurança para as instancias EC2 que conterão a aplicação Wordpress, nela será criada duas regras de entrada uma para SSH permitindo acesso para o grupo do Bastion e uma HTTP permitndo acesso do Load Balancer. Ficando da seguinte forma:
+
+<img width="896" height="576" alt="image" src="https://github.com/user-attachments/assets/eaaa08f3-faa9-401b-938f-acbb6cbe5b59" />
 
 ## Banco de Dados RDS
 
