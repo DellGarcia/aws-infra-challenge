@@ -11,8 +11,11 @@ Parameters:
     Description: Subnets to be used
     Type: List<AWS::EC2::Subnet::Id>
 
+  EFSSecurityGroup:
+    Description: Security Group for EFS
+    Type: AWS::EC2::SecurityGroup::Id
+
 Resources:
-  # Crie um sistema de arquivos EFS
   EFSFileSystem:
     Type: 'AWS::EFS::FileSystem'
     Properties:
@@ -23,20 +26,6 @@ Resources:
         - Key: Name
           Value: 'AWS-Infra-FS'
 
-  # Crie um Security Group para permitir o acesso NFS
-  EFSSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: 'Security Group para acesso ao EFS via NFS'
-      VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          CidrIp: '0.0.0.0/0' # Recomenda-se restringir a um CIDR mais específico
-
-
-  # Crie o primeiro mount target na Subnet 1
   MountTargetSubnet1:
     Type: 'AWS::EFS::MountTarget'
     Properties:
@@ -45,10 +34,9 @@ Resources:
         - 0
         - !Ref PrivateSubnets
       SecurityGroups:
-        - !GetAtt EFSSecurityGroup.GroupId
+        - !Ref EFSSecurityGroup
     DependsOn: EFSFileSystem
 
-  # Crie o segundo mount target na Subnet 2
   MountTargetSubnet2:
     Type: 'AWS::EFS::MountTarget'
     Properties:
@@ -57,6 +45,6 @@ Resources:
         - 1
         - !Ref PrivateSubnets
       SecurityGroups:
-        - !GetAtt EFSSecurityGroup.GroupId
+        - !Ref EFSSecurityGroup
     DependsOn: EFSFileSystem
 
