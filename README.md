@@ -8,7 +8,7 @@ Este projeto tem como objetivo realizar a implantação de uma infraestrutura pa
 As seguintes etapas serão necessárias para colocar o projeto para funcionar.
 
 1. VPC e Subnets
-2. Banco de Dados
+2. Banco de Dados RDS
 3. Sistema de Arquivos EFS
 4. Instancia Bastion Host
 5. Lauch Template
@@ -27,5 +27,21 @@ Uma VPC é um serviço da AWS que permite criar uma rede isolada e privada, uma 
 
 ### Como criar a VPC e Subnets
 
-Felizmente esse é um passo bem tranquilo a AWS já oferece um forma de automatizar isso bem simples.
+Felizmente esse é um passo bem tranquilo já que a AWS oferece um forma de automatizar isso, basta acessar a página do serviço VPC, acessar a aba VPCs ou Your VPCs e então clicar em criar VPC.
 
+<img width="791" height="161" alt="image" src="https://github.com/user-attachments/assets/02d2bc60-6e2b-472c-9744-96b156503b33" />
+
+Então siga os passos abaixo:
+
+1. Selecine VPC and more
+2. Coloque um nome para a VPC por exemplo AWS-Infra
+3. No item "Number of private subnets" selecione 4
+4. Em "NAT gateways ($)" selecione 1 per AZ
+5. Em VPC endpoints selecione None
+6. Clique em "Create VPC"
+
+Com isso será criado a VPC com 2 subnets públicas cada uma com 1 NAT Gateway, 2 subnets privadas que serão usadas pelas instancias ec2 criadas pelo Auto Scaling e mais 2 subnets privadas destinadas para o banco de dados RDS e para montar o sistema de arquivos EFS.
+
+## Banco de Dados RDS
+
+## Sistema de arquivos EFS
