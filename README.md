@@ -44,12 +44,16 @@ Então siga os passos abaixo:
 Com isso será criado a VPC com 2 subnets públicas cada uma com 1 NAT Gateway, 2 subnets privadas que serão usadas pelas instancias ec2 criadas pelo Auto Scaling e mais 2 subnets privadas destinadas para o banco de dados RDS e para montar o sistema de arquivos EFS.
 
 ## Security Groups
+Os grupos de segurança são um dos pricinpais componentes para o funcionamento da infrastutura, sem eles basicamente não haveria comunicação entre os diferentes serviços, o ideal é isolar os pricipais recursos em security groups diferentes e só liberar acesso aos grupos necessários e apenas aos recursos necessários.
 
 1. Bastion-SG-AWS-Infra
 2. LoadBalancer-SG-AWS-Infra
-3. Instance
-4. Database
-5. EFS
+3. Instance-SG-AWS-Infra
+4. Database-SG-AWS-Infra
+5. EFS-SG-AWS-Infra
+
+### 1 - Bastion Security Group
+O Bastion será o meio disponibilizado para acessar as instancias privadas via SSH, basicamente será uma instancia EC2 que servirá como ponte. Para isso precisamos criar um regra de entrada que permita acesso na porta 22 de preferencia litando apenas ao seu IP, dessa forma só você poderá acessar o Bastion, a regra de entrada ficará como na imagem abaixo:
 
 <img width="896" height="348" alt="image" src="https://github.com/user-attachments/assets/4be01dcd-9313-4d40-9467-b949a90eafb9" />
 
