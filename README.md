@@ -8,13 +8,14 @@ Este projeto tem como objetivo realizar a implantação de uma infraestrutura pa
 As seguintes etapas serão necessárias para colocar o projeto para funcionar.
 
 1. VPC e Subnets
-2. Banco de Dados RDS
-3. Sistema de Arquivos EFS
-4. Instancia Bastion Host
-5. Lauch Template
-6. Target Group
-7. Load Balancer
-8. Auto Scaling Group
+2. Security Groups
+3. Banco de Dados RDS
+4. Sistema de Arquivos EFS
+5. Instancia Bastion Host
+6. Lauch Template
+7. Target Group
+8. Load Balancer
+9. Auto Scaling Group
 
 Obs: É importante lembrar que os recursos criados aqui vão gerar custos, então depois quando não for usar mais lembre de deletar os recursos criados.
 
@@ -41,6 +42,18 @@ Então siga os passos abaixo:
 6. Clique em "Create VPC"
 
 Com isso será criado a VPC com 2 subnets públicas cada uma com 1 NAT Gateway, 2 subnets privadas que serão usadas pelas instancias ec2 criadas pelo Auto Scaling e mais 2 subnets privadas destinadas para o banco de dados RDS e para montar o sistema de arquivos EFS.
+
+## Security Groups
+
+1. Bastion-SG-AWS-Infra
+2. LoadBalancer-SG-AWS-Infra
+3. Instance
+4. Database
+5. EFS
+
+
+
+
 
 ## Banco de Dados RDS
 
