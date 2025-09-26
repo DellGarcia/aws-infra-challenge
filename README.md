@@ -43,7 +43,9 @@ Então siga os passos abaixo:
 
 Com isso será criado a VPC com 2 subnets públicas cada uma com 1 NAT Gateway, 2 subnets privadas que serão usadas pelas instancias ec2 criadas pelo Auto Scaling e mais 2 subnets privadas destinadas para o banco de dados RDS e para montar o sistema de arquivos EFS.
 
-## Security Groups
+<details>
+<summary><h2>Security Groups<h2/></summary>
+    
 Os grupos de segurança são um dos pricinpais componentes para o funcionamento da infrastutura, sem eles basicamente não haveria comunicação entre os diferentes serviços, o ideal é isolar os pricipais recursos em security groups diferentes e só liberar acesso aos grupos necessários e apenas aos recursos necessários.
 
 1. Bastion-SG-AWS-Infra
@@ -77,4 +79,4 @@ Security Group para liberar acesso das instancias EC2 usarem o sistema de arquiv
 
 <img width="903" height="307" alt="image" src="https://github.com/user-attachments/assets/953d2096-cfff-4c45-a517-a46e544d08e0" />
 
-
+</details>
