@@ -62,11 +62,19 @@ Esse security group será resposável por permitir acesso HTTP ao Load Balancer 
 
 <img width="896" height="348" alt="image" src="https://github.com/user-attachments/assets/ec247420-07e1-4f3f-8172-905244bd5637" />
 
-### 3- Instance Security Group
-Grupo de segurança para as instancias EC2 que conterão a aplicação Wordpress, nela será criada duas regras de entrada uma para SSH permitindo acesso para o grupo do Bastion e uma HTTP permitndo acesso do Load Balancer. Ficando da seguinte forma:
+### 3 - Instance Security Group
+Security Group para as instancias EC2 que conterão a aplicação Wordpress, nela serão criada duas regras de entrada uma para SSH permitindo acesso para o grupo do Bastion e uma HTTP permitndo acesso do Load Balancer. Ficando da seguinte forma:
 
 <img width="896" height="576" alt="image" src="https://github.com/user-attachments/assets/eaaa08f3-faa9-401b-938f-acbb6cbe5b59" />
 
-## Banco de Dados RDS
+## 4 - Banco de Dados RDS
+Esse security group libera acesso ao mysql para as instancias EC2 do worpress:
 
-## Sistema de arquivos EFS
+<img width="903" height="307" alt="image" src="https://github.com/user-attachments/assets/dbc07304-af3c-4941-8569-65692e0c8005" />
+
+## 5 - Sistema de arquivos EFS
+Security Group para liberar acesso das instancias EC2 usarem o sistema de arquivos do EFS.
+
+<img width="903" height="307" alt="image" src="https://github.com/user-attachments/assets/953d2096-cfff-4c45-a517-a46e544d08e0" />
+
+
