@@ -55,8 +55,7 @@ Os grupos de segurança são um dos pricinpais componentes para o funcionamento 
 ### 1 - Bastion Security Group
 O Bastion será o meio disponibilizado para acessar as instancias privadas via SSH, basicamente será uma instancia EC2 que servirá como ponte. Para isso precisamos criar um regra de entrada que permita acesso na porta 22 de preferencia litando apenas ao seu IP, dessa forma só você poderá acessar o Bastion, a regra de entrada ficará como na imagem abaixo:
 
-<img width="896" height="348" alt="image" src="https://github.com/user-attachments/assets/4be01dcd-9313-4d40-9467-b949a90eafb9" />
-
+<img width="896" height="348" alt="image" src="https://github.com/user-attachments/assets/271da61c-d069-4bbb-bdea-acf5a9f926c5" />
 
 
 ## Banco de Dados RDS
