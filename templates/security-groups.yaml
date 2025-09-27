@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Este template cria um conjunto de Security Groups para uma infraestrutura AWS de três camadas.
+  Inclui grupos para Bastion, Load Balancer, Instâncias de Aplicação, Banco de Dados e EFS em uma VPC especificada.
+
+Parameters:
+  VpcId:
+    Description: "Selecione a VPC onde os Security Groups serão criados."
+    Type: AWS::EC2::VPC::Id
+
+  BastionSSHIP:
+    Description: O endereço IP (em notação CIDR) a ser permitido para acesso SSH ao Bastion Host.
+    Type: String
+    MinLength: "9"
+    MaxLength: "18"
+    Default: "0.0.0.0/0"
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: "Deve ser um intervalo de IP válido no formato CIDR (ex: 192.168.1.0/24)."
+
+Resources:
+  # 1. Security Group para o Bastion Host
+  BastionSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Bastion-SG-AWS-Infra
+      GroupDescription: "Permite acesso SSH a partir de um IP especifico para o Bastion Host"
+      VpcId: !Ref VpcId 
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref BastionSSHIP
+      Tags:
+        - Key: Name
+          Value: Bastion-SG-AWS-Infra
+
+  # 2. Security Group para o Load Balancer
+  LoadBalancerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: LoadBalancer-SG-AWS-Infra
+      GroupDescription: "Permite trafego HTTP de entrada de qualquer endereco IPv4"
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: LoadBalancer-SG-AWS-Infra
+
+  # 3. Security Group para as Instâncias da Aplicação
+  InstanceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Instance-SG-AWS-Infra
+      GroupDescription: "Permite acesso SSH do Bastion e HTTP do Load Balancer"
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !GetAtt BastionSG.GroupId
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !GetAtt LoadBalancerSG.GroupId
+      Tags:
+        - Key: Name
+          Value: Instance-SG-AWS-Infra
+
+  # 4. Security Group para o Banco de Dados
+  DatabaseSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Database-SG-AWS-Infra
+      GroupDescription: "Permite trafego MySQL a partir das instancias da aplicacao"
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !GetAtt InstanceSG.GroupId
+      Tags:
+        - Key: Name
+          Value: Database-SG-AWS-Infra
+
+  # 5. Security Group para o EFS
+  EFSSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: EFS-SG-AWS-Infra
+      GroupDescription: "Permite trafego NFS a partir das instancias da aplicacao"
+      VpcId: !Ref VpcId 
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !GetAtt InstanceSG.GroupId
+      Tags:
+        - Key: Name
+          Value: EFS-SG-AWS-Infra
+
+Outputs:
+  BastionSGId:
+    Description: "ID do Security Group do Bastion"
+    Value: !GetAtt BastionSG.GroupId
+  LoadBalancerSGId:
+    Description: "ID do Security Group do Load Balancer"
+    Value: !GetAtt LoadBalancerSG.GroupId
+  InstanceSGId:
+    Description: "ID do Security Group das Instâncias"
+    Value: !GetAtt InstanceSG.GroupId
+  DatabaseSGId:
+    Description: "ID do Security Group do Banco de Dados"
+    Value: !GetAtt DatabaseSG.GroupId
+  EFSSGId:
+    Description: "ID do Security Group do EFS"
+    Value: !GetAtt EFSSG.GroupId
