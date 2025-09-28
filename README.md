@@ -5,7 +5,7 @@ Este projeto tem como objetivo realizar a implantação de uma infraestrutura pa
 <img width="1381" height="607" alt="image" src="https://github.com/user-attachments/assets/74b1015d-c4a6-432a-bbb2-5e28a8694bb8" />
 
 ## ⚙️ Cloud Formation
-Para este projeto utilizei o AWS Cloud Formation para automatizar a criação de alguns recursos, neste guia de instalação vou explicar como preparar a infra estrutura usando o Cloud Formation e também como fazer manualmente caso tenham interesse em saber como a mágica aconteceu.
+Para este projeto utilizei o AWS Cloud Formation para automatizar a criação de alguns recursos, neste guia de instalação vou explicar como preparar a infra estrutura usando o Cloud Formation e diretamente no Console o que não tiver um template.
 
 <details>
     <summary><h2>Como criar uma Stack no Cloud Formation (YAML)<h2/></summary>
@@ -163,7 +163,32 @@ Acesse o serviço do Secrets Manager no Console da AWS e siga os seguintes passo
 3. Clique em next
 4. De um nome para o Secret e uma descrição se quiser
 5. Pode avançar até o final, revise o que vai ser armazenado e clique em "Store".
+6. Veja o ARN do Secret ele será necessário no próximo passo.
 
 Obs: O ideal era criar 1 secret para cada informação, mas como meu objetivo aqui é apenas testar esse serviço optei por armazená-los juntos.
 
 ## Etapa 5 - EFS / Lauch Template / Load Balancer / Auto Scaling 
+Essa etapa parece ter muita coisa de uma só vez, e realmente tem, mas é graças ao script que automizou a criação de todos esses recursos.
+O script se chama "aws-infra-template.yaml" vá até o CloudFormation faça upload desse arquivo e siga os seguintes passos.
+
+1. Dê um nome para a Stack, EX: "AWS-Infra-Stack"
+2. Escolha o security Group do EFS.
+3. Escolha o security Group das Instancias.
+5. InstanceType pode deixar padrão.
+6. KeyName escolha uma chave para poder logar via SSH nas instâncias.
+7. LatestAMIId pode deixar padrão.
+8. Escolha o security Group do Load Balancer.
+9. Selecione as Private Subnets para dados (Subnets 3 e 4).
+10. Selecione as Private Subnets para as instancias (Subnets 1 e 2).
+11. Selecione as Public Subnets para Load Balancer.
+12. Defina qual o range de IP vai poder acessar o BastionHost.
+13. Cole o ARN do Secret criado no Secrets Manager.
+14. Informe qual a VPC que será usada.
+
+A ordem dos parâmetros ficou estranha porque os parâmetros são ordenados em ordem alfabética, também gostaria de colocar em uma ordem que faça mais sentido...
+
+## Resultado
+
+Se tudo foi configurado certo, após a execução da Stack a infraestrutura estará completa, talvez demore uns minutinhos para a instalação dos softwares dentro das instancias terminar, mas quando terminar será possível ver que os target groups ficarão marcados como Health igual na imagem abaixo:
+
+Quando ficar Healthy, basta acessar o DNS do LoadBalancer pelo navegador e logo verá a tela de instalação do wordpress. Siga os passos para concluir a instalação, e quando acessar novamente verá a tela incial do Wordpres com um primeiro post simples.
