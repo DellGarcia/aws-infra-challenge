@@ -53,7 +53,7 @@ Subnets Privadas 3 e 4:
 
 
 <details>
-    <summary><h3>Como criar a VPC e Subnets no Console da AWS<h3></summary>
+    <summary><h3>Como criar a VPC e Subnets no Console<h3></summary>
 
 A AWS oferece um forma de automatizar isso, basta acessar a página do serviço VPC, acessar a aba VPCs ou Your VPCs e então clicar em criar VPC.
 
@@ -73,9 +73,13 @@ Com isso será criado a VPC com 2 subnets públicas cada uma com 1 NAT Gateway, 
 </details>
 
 ## Etapa 2 - Security Groups
+O arquivo security-groups-template.yaml automatiza a criação e configuração de todos os security groups que serão criados, basta executá-lo Cloud Formation.
+Os parâmetros necessário são ID da VPC e qual IP terá permissão para acessar o Bastion Host.
+
+<img width="1396" height="569" alt="image" src="https://github.com/user-attachments/assets/d855a761-ee7d-4363-b88e-7e65217c6afd" />
 
 <details>
-<summary><h2>Security Groups<h2/></summary>
+<summary><h2>Security Groups pelo Console<h2/></summary>
     
 Os grupos de segurança são um dos pricinpais componentes para o funcionamento da infrastutura, sem eles basicamente não haveria comunicação entre os diferentes serviços, o ideal é isolar os pricipais recursos em security groups diferentes e só liberar acesso aos grupos necessários e apenas aos recursos necessários.
 
@@ -111,3 +115,34 @@ Security Group para liberar acesso das instancias EC2 usarem o sistema de arquiv
 <img width="903" height="307" alt="image" src="https://github.com/user-attachments/assets/953d2096-cfff-4c45-a517-a46e544d08e0" />
 
 </details>
+
+# Etapa 3 - Banco de Dados RDS
+Aqui não criei um template do Cloud Formation, mas caso tenha interesse também é possivel automatizar essa parte.
+Vou seguir apenas com o passo a passo da criação pelo console.
+
+Accese no console o serviço "Aurora and RDS", primeiro precisamos criar um BD Subnet Group:
+
+1. Acesse a aba "Subnet Groups".
+2. Clique em "Create DB subnet group".
+3. De um nome ao grupo escolha a VPC criada nos passos anteriores.
+4. Escolha as Avalailabilitis Zones.
+5. Em Subnets escolha as subnets privadas 3 e 4 (Subnets destinadas aos dados).
+6. Clique em create.
+
+Após isso acesse a aba database, clique em "Create Database" e siga os passo abaixo:
+
+1. Deixe o método de criação em padrão.
+2. Escolha o banco de dados MySQL.
+3. Em templates escolha "Free Tier".
+4. Em "Settings" de um nome ao seu database.
+5. Master Username coloque admin.
+6. Credentials Manager escolha "Self Managed".
+7. Pode marcar a caixa "auto generate password" ou coloque uma senha de sua preferência.
+8. Em Connectivity selecione a VPC e Subnet criadas anteriormente.
+9. Em Security Group selecione "Database-SG-AWS-Infra".
+10. Em Additional Configuration coloque o nome wordpress em "Initial database name".
+11. Desmarque backups e encryption.
+12. Clique em create database.
+
+Com isso o banco dedos será criado e ao finalizar ele vai informar qual o endereço para acesar e qual a senha caso ele tenha gerado. 
+Salve os dois vão ser necessário no próximo passo.
