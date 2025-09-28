@@ -130,7 +130,7 @@ Accese no console o serviço "Aurora and RDS", primeiro precisamos criar um DB S
 1. Acesse a aba "Subnet Groups".
 2. Clique em "Create DB subnet group".
 3. De um nome ao grupo escolha a VPC criada nos passos anteriores.
-4. Escolha as Avalailabilitis Zones.
+4. Escolha as Availability Zones.
 5. Em Subnets escolha as subnets privadas 3 e 4 (Subnets destinadas aos dados).
 6. Clique em create.
 
