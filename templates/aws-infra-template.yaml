@@ -140,13 +140,14 @@ Resources:
         SecurityGroupIds: 
           - !Ref InstanceSecurityGroup
         KeyName: !Ref KeyName
-        # IamInstanceProfile:
-        #   Name: !Ref EC2InstanceProfile
+        IamInstanceProfile:
+          Name: !Ref EC2InstanceProfile
         UserData: !Base64
           Fn::Sub: |
             #!/bin/bash
             yum update -y
-            yum install -y docker git jq aws-cfn-bootstrap amazon-efs-utils mariadb105
+            yum install -y docker git jq aws-cfn-bootstrap amazon-efs-utils mysql 
+            # mariadb105
 
             # Retrive credentials secret
             SECRET_NAME="credentials"
@@ -154,10 +155,10 @@ Resources:
             CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
             SECRET=$(echo "$CREDENTIALS" | jq -r '.credentials')
 
-            SECRET_ARR=(${SECRET//;/ })
+            SECRET_ARR=(${!SECRET//;/ })
 
-            export MYSQL_HOST=$SECRET_ARR[0]
-            MYSQL_PASS=$SECRET_ARR[1]
+            export MYSQL_HOST=${!SECRET_ARR[0]}
+            MYSQL_PASS=${!SECRET_ARR[1]}
 
             mysql --user=admin --password=$MYSQL_PASS
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 yum update -y
-yum install -y docker git jq aws-cfn-bootstrap amazon-efs-utils mariadb105
+yum install -y docker git jq aws-cfn-bootstrap amazon-efs-utils mysql 
+# mariadb105
 
 # Retrive credentials secret
 SECRET_NAME="credentials"
@@ -8,10 +9,10 @@ REGION="us-east-1"
 CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
 SECRET=$(echo "$CREDENTIALS" | jq -r '.credentials')
 
-SECRET_ARR=(${SECRET//;/ })
+SECRET_ARR=(${!SECRET//;/ })
 
-export MYSQL_HOST=${SECRET_ARR[0]}
-MYSQL_PASS=${SECRET_ARR[1]}
+export MYSQL_HOST=${!SECRET_ARR[0]}
+MYSQL_PASS=${!SECRET_ARR[1]}
 
 mysql --user=admin --password=$MYSQL_PASS
 
