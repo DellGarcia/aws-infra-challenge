@@ -4,21 +4,22 @@ Este projeto tem como objetivo realizar a implantação de uma infraestrutura pa
 
 <img width="1381" height="607" alt="image" src="https://github.com/user-attachments/assets/74b1015d-c4a6-432a-bbb2-5e28a8694bb8" />
 
+## Cloud Formation
+Para este projeto utilizei o AWS Cloud Formation para automatizar a criação de alguns recursos, neste guia de instalação vou explicar como preparar a infra estrutura usando o Cloud Formation e também como fazer manualmente caso tenham interesse em saber como a mágica aconteceu.
+
 # Etapas do Projeto:
 As seguintes etapas serão necessárias para colocar o projeto para funcionar.
 
 1. VPC e Subnets
 2. Security Groups
 3. Banco de Dados RDS
-4. Sistema de Arquivos EFS
-5. Instancia Bastion Host
-6. Lauch Template
-7. Target Group
-8. Load Balancer
-9. Auto Scaling Group
+4. Secrets Manager
+5. Lauch Template / Load Balancer / Auto Scaling 
 
 Obs: É importante lembrar que os recursos criados aqui vão gerar custos, então depois quando não for usar mais lembre de deletar os recursos criados.
 
+## 1  VPC e Subnets
+    Neste repositório há um arquivo chamado vpc-template.yaml, com ele podemos acessar o serviço do Cloud Formation e solicitar a criação de uma Stack que vai automatizar esse processo.
 
 ## VPC e Subnets
     
