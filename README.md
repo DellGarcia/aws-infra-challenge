@@ -32,7 +32,7 @@ As seguintes etapas serão necessárias para colocar o projeto para funcionar.
 2. Security Groups
 3. Banco de Dados RDS
 4. Secrets Manager
-5. Lauch Template / Load Balancer / Auto Scaling 
+5. EFS / Lauch Template / Load Balancer / Auto Scaling 
 
 Obs: É importante lembrar que os recursos criados aqui vão gerar custos, então depois quando não for usar mais lembre de deletar os recursos criados.
 
@@ -166,3 +166,4 @@ Acesse o serviço do Secrets Manager no Console da AWS e siga os seguintes passo
 
 Obs: O ideal era criar 1 secret para cada informação, mas como meu objetivo aqui é apenas testar esse serviço optei por armazená-los juntos.
 
+## Etapa 5 - EFS / Lauch Template / Load Balancer / Auto Scaling 
