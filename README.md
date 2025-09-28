@@ -191,4 +191,8 @@ A ordem dos parâmetros ficou estranha porque os parâmetros são ordenados em o
 
 Se tudo foi configurado certo, após a execução da Stack a infraestrutura estará completa, talvez demore uns minutinhos para a instalação dos softwares dentro das instancias terminar, mas quando terminar será possível ver que os target groups ficarão marcados como Health igual na imagem abaixo:
 
+<img width="1857" height="497" alt="image" src="https://github.com/user-attachments/assets/c5f6eda1-0cf3-4726-af72-7d4bdca2e324" />
+
 Quando ficar Healthy, basta acessar o DNS do LoadBalancer pelo navegador e logo verá a tela de instalação do wordpress. Siga os passos para concluir a instalação, e quando acessar novamente verá a tela incial do Wordpres com um primeiro post simples.
+
+<img width="1857" height="1039" alt="image" src="https://github.com/user-attachments/assets/57ed11e8-6531-407f-9cc0-186ca06a372c" />
