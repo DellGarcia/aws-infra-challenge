@@ -10,8 +10,8 @@ SECRET=$(echo "$CREDENTIALS" | jq -r '.credentials')
 
 SECRET_ARR=(${SECRET//;/ })
 
-export MYSQL_HOST=$SECRET_ARR[0]
-MYSQL_PASS=$SECRET_ARR[1]
+export MYSQL_HOST=${SECRET_ARR[0]}
+MYSQL_PASS=${SECRET_ARR[1]}
 
 mysql --user=admin --password=$MYSQL_PASS
 
