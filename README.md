@@ -36,7 +36,7 @@ As seguintes etapas serão necessárias para colocar o projeto para funcionar.
 
 Obs: É importante lembrar que os recursos criados aqui vão gerar custos, então depois quando não for usar mais lembre de deletar os recursos criados.
 
-## Etapa 1 - VPC e Subnets
+## 🌐 Etapa 1 - VPC e Subnets
 Neste repositório há um arquivo chamado vpc-template.yaml, com ele podemos acessar o serviço do Cloud Formation e solicitar a criação de uma Stack usando esse template.
 Basta dar um nome para a Stack e dar um nome para a VPC que vai ser criada, o template vai criar 1 VPC com 6 Subnets (2 públicas e 4 privadas) distribuidas em 2 AZs.
 
@@ -76,7 +76,7 @@ Com isso será criado a VPC com 2 subnets públicas cada uma com 1 NAT Gateway, 
 
 </details>
 
-## Etapa 2 - Security Groups
+## 🔐 Etapa 2 - Security Groups
 O arquivo security-groups-template.yaml automatiza a criação e configuração de todos os security groups que serão criados, basta executá-lo Cloud Formation.
 Os parâmetros necessário são ID da VPC e qual IP terá permissão para acessar o Bastion Host.
 
@@ -120,11 +120,12 @@ Security Group para liberar acesso das instancias EC2 usarem o sistema de arquiv
 
 </details>
 
-# Etapa 3 - Banco de Dados RDS
-Aqui não criei um template do Cloud Formation, mas caso tenha interesse também é possivel automatizar essa parte.
+## 📁 Etapa 3 - Banco de Dados RDS
+Para essa etapa não criei um template do Cloud Formation, mas caso tenha interesse também é possivel automatizar essa parte.
 Vou seguir apenas com o passo a passo da criação pelo console.
 
-Accese no console o serviço "Aurora and RDS", primeiro precisamos criar um BD Subnet Group:
+### Criar DB Subnet Group
+Accese no console o serviço "Aurora and RDS", primeiro precisamos criar um DB Subnet Group:
 
 1. Acesse a aba "Subnet Groups".
 2. Clique em "Create DB subnet group".
@@ -133,7 +134,9 @@ Accese no console o serviço "Aurora and RDS", primeiro precisamos criar um BD S
 5. Em Subnets escolha as subnets privadas 3 e 4 (Subnets destinadas aos dados).
 6. Clique em create.
 
-Após isso acesse a aba database, clique em "Create Database" e siga os passo abaixo:
+### Criar Banco de Dados (MySQL)
+
+Acesse a aba database, clique em "Create Database" e siga os passo abaixo:
 
 1. Deixe o método de criação em padrão.
 2. Escolha o banco de dados MySQL.
@@ -148,5 +151,18 @@ Após isso acesse a aba database, clique em "Create Database" e siga os passo ab
 11. Desmarque backups e encryption.
 12. Clique em create database.
 
-Com isso o banco dedos será criado e ao finalizar ele vai informar qual o endereço para acesar e qual a senha caso ele tenha gerado. 
+Com isso o banco dados será criado e ao finalizar ele vai informar qual o endereço para acesar e qual a senha caso ele tenha gerado. 
 Salve os dois vão ser necessário no próximo passo.
+
+## 🔒 Etapa 4 - Secrets Manager
+Esse passo é opcional e agrega um pouco de mais custo a infraestrutura, mas é mais seguro, caso não deseje criar Secrets basta colar os valores que vamos criar aqui diretamente no user-data do LauchTemplate no próximos passos.
+Acesse o serviço do Secrets Manager no Console da AWS e siga os seguintes passos:
+
+1. Clique em "Store a new secret".
+2. Adicione a chave "credentials" e em valor coloque o host do banco de dados que foi criado e senha do banco de dados separado por ;
+3. Clique em next
+4. De um nome para o Secret e uma descrição se quiser
+5. Pode avançar até o final, revise o que vai ser armazenado e clique em "Store".
+
+Obs: O ideal era criar 1 secret para cada informação, mas como meu objetivo aqui é apenas testar esse serviço optei por armazená-los juntos.
+
