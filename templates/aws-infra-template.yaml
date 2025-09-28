@@ -11,7 +11,7 @@ Parameters:
     ConstraintDescription: Deve ser um tipo de instância EC2 válido.
 
   KeyName:
-    Description: Nome de um KeyPair EC2 existente para acesso SSH
+    Description: Informe uma chave de acess SSH
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: Deve ser o nome de um KeyPair EC2 existente.
 
@@ -20,36 +20,35 @@ Parameters:
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 
   VPC:
-    Description: VPC to be used
+    Description: VPC que será usada.
     Type: AWS::EC2::VPC::Id
 
   PublicSubnets:
-    Description: Inform two public Subnets for LoadBalancer
+    Description: Informe duas subnets públicas para o Load Balancer.
     Type: List<AWS::EC2::Subnet::Id>
 
   PrivateSubnets:
-    Description: Inform two private Subnets for Auto Scaling
+    Description: Informe um grupo de segurança para as Subredes privadas.
     Type: List<AWS::EC2::Subnet::Id>
 
   PrivateDataSubnets:
-    Description: Inform two private Subnets for data
+    Description: Informe um grupo de segurança para as Subredes privadas para dados.
     Type: List<AWS::EC2::Subnet::Id>
 
   InstanceSecurityGroup:
-    Description: Inform security group for EC2 instances
+    Description: Informe um grupo de segurança para as instancias EC2.
     Type: AWS::EC2::SecurityGroup::Id
 
   EFSSecurityGroup:
-    Description: Inform security group for EFS
+    Description: Informe um grupo de segurança para o EFS.
     Type: AWS::EC2::SecurityGroup::Id
 
   LoadBalancerSecurityGroup:
-    Description: Inform security group for Load Balancer
+    Description: Informe um grupo de segurança para o Load Balancer.
     Type: AWS::EC2::SecurityGroup::Id
   
-
   SSHLocation:
-    Description: The IP address range that can be used to SSH to the EC2 instances
+    Description: Defina quais IPs podem acessar o BastionHost.
     Type: String
     Default: 0.0.0.0/0
     MinLength: 9
@@ -57,42 +56,44 @@ Parameters:
     AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
 
+  SecretARN:
+    Type: String
+    Description: Informe o ARN do secret que contém as credencias do BD.
+
 Resources:
-  ### FIM
-
   ### Secrets Manager
-  # SecretsManagerPolicy:
-  #   Type: AWS::IAM::Policy
-  #   Properties:
-  #     PolicyName: 'EC2SecretsManagerAccessPolicy'
-  #     PolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Effect: Allow
-  #           Action: 'secretsmanager:GetSecretValue'
-  #           Resource: 'arn:aws:secretsmanager:us-east-1:809808680701:secret:aws_infra_challenge_pat-9RX6H9'
-  #     Roles:
-  #       - !Ref EC2Role
+  SecretsManagerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: 'EC2SecretsManagerAccessPolicy'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: 'secretsmanager:GetSecretValue'
+            Resource: !Ref SecretARN
+      Roles:
+        - !Ref EC2Role
 
-  # EC2Role:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     RoleName: 'EC2SecretsManagerAccessRole'
-  #     AssumeRolePolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: 'ec2.amazonaws.com'
-  #           Action: 'sts:AssumeRole'
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: 'EC2SecretsManagerAccessRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'ec2.amazonaws.com'
+            Action: 'sts:AssumeRole'
 
-  # EC2InstanceProfile:
-  #   Type: AWS::IAM::InstanceProfile
-  #   Properties:
-  #     InstanceProfileName: 'EC2SecretsManagerAccessProfile'
-  #     Roles:
-  #       - !Ref EC2Role
-  ### FIM 
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: 'EC2SecretsManagerAccessProfile'
+      Roles:
+        - !Ref EC2Role
+
 
   ### EFS
   EFSFileSystem:
@@ -147,11 +148,18 @@ Resources:
             yum update -y
             yum install -y docker git jq aws-cfn-bootstrap amazon-efs-utils mariadb105
 
-            # Configure Database
-            export MYSQL_HOST=
-            MYSQL_PASS=
+            # Retrive credentials secret
+            SECRET_NAME="credentials"
+            REGION="us-east-1"
+            CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
+            SECRET=$(echo "$CREDENTIALS" | jq -r '.credentials')
 
-            mysql --user=admin --password=
+            SECRET_ARR=(${SECRET//;/ })
+
+            export MYSQL_HOST=$SECRET_ARR[0]
+            MYSQL_PASS=$SECRET_ARR[1]
+
+            mysql --user=admin --password=$MYSQL_PASS
 
             # Cria o diretório para o ponto de montagem
             mkdir -p /wordpress/wp-content
@@ -166,16 +174,11 @@ Resources:
             mv /usr/local/bin/docker-compose /usr/bin/docker-compose
             chmod +x /usr/bin/docker-compose      
 
-            # Retrive github secret
-            #SECRET_NAME="aws_infra_challenge_pat"
-            #REGION="us-east-1"
-            #GITHUB_PAT=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query SecretString --output text)
-            #PAT=$(echo "$GITHUB_PAT" | jq -r '.github_pat')
-
             # Clone github repository
             #git clone https://DellGarcia:$PAT@github.com/DellGarcia/aws-infra-challenge.git
+            git clone https://github.com/DellGarcia/aws-infra-challenge.git
 
-            # Test
+            # Create .env
             cd ~
             echo "DB_HOST=$MYSQL_HOST
             DB_USER=admin
@@ -190,7 +193,7 @@ Resources:
             docker-compose up -d
 
             # Success Signal for CloudFormation
-            # /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource EC2AutoScalingGroup --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource EC2AutoScalingGroup --region ${AWS::Region}
 
         TagSpecifications:
           - ResourceType: instance
@@ -216,7 +219,7 @@ Resources:
     CreationPolicy:
       ResourceSignal:
         Timeout: PT10M
-        Count: 0
+        Count: 1
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
