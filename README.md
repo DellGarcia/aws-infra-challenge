@@ -36,21 +36,26 @@ As seguintes etapas serão necessárias para colocar o projeto para funcionar.
 
 Obs: É importante lembrar que os recursos criados aqui vão gerar custos, então depois quando não for usar mais lembre de deletar os recursos criados.
 
-## 1  VPC e Subnets
+## Etapa 1 - VPC e Subnets
 Neste repositório há um arquivo chamado vpc-template.yaml, com ele podemos acessar o serviço do Cloud Formation e solicitar a criação de uma Stack usando esse template.
+Basta dar um nome para a Stack e dar um nome para a VPC que vai ser criada, o template vai criar 1 VPC com 6 Subnets (2 públicas e 4 privadas) distribuidas em 2 AZs.
+
+As subnets criadas vão ser númeradas para facilitar a identificação, para este projeto segui a seguinte regra para a utlização das subnets:
+
+Subnets Públicas 1 e 2:
+    Elas por serem públicas tem um internet gateway que permite acesso a internet, por isso nela anexei apenas os NAT Gatways, Load Balancer e Bastion Host.
+
+Subnets Privadas 1 e 2:
+    Essas destinei as instancias EC2 que vão executar a aplicação Wordpress, junto a elas estará o Auto Scaling Group.
+
+Subnets Privadas 3 e 4: 
+    São voltadas para os dados, ou seja aqui ficara o banco de dados do RDS e os mount targets do EFS.
 
 
-<img width="1915" height="164" alt="image" src="https://github.com/user-attachments/assets/58bc150b-68cf-4b1c-9510-f1c97ae5412b" />
+<details>
+    <summary><h3>Como criar a VPC e Subnets no Console da AWS<h3></summary>
 
-## VPC e Subnets
-    
-Uma VPC é um serviço da AWS que permite criar uma rede isolada e privada, uma VPC atua dentro de uma AWS Region, ou seja, se criada em uma região por exemplo "us-east-1" ela não será visível em outras regiões, para este projeto utilzei "us-east-1".
-
-**Obs: alguns serviços não estão disponíveis em todas as regiões da AWS**.
-
-### Como criar a VPC e Subnets
-
-Felizmente esse é um passo bem tranquilo já que a AWS oferece um forma de automatizar isso, basta acessar a página do serviço VPC, acessar a aba VPCs ou Your VPCs e então clicar em criar VPC.
+A AWS oferece um forma de automatizar isso, basta acessar a página do serviço VPC, acessar a aba VPCs ou Your VPCs e então clicar em criar VPC.
 
 <img width="791" height="161" alt="image" src="https://github.com/user-attachments/assets/02d2bc60-6e2b-472c-9744-96b156503b33" />
 
@@ -64,6 +69,10 @@ Então siga os passos abaixo:
 6. Clique em "Create VPC"
 
 Com isso será criado a VPC com 2 subnets públicas cada uma com 1 NAT Gateway, 2 subnets privadas que serão usadas pelas instancias ec2 criadas pelo Auto Scaling e mais 2 subnets privadas destinadas para o banco de dados RDS e para montar o sistema de arquivos EFS.
+
+</details>
+
+## Etapa 2 - Security Groups
 
 <details>
 <summary><h2>Security Groups<h2/></summary>
