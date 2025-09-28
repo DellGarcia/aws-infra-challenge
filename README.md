@@ -167,7 +167,7 @@ Acesse o serviço do Secrets Manager no Console da AWS e siga os seguintes passo
 
 Obs: O ideal era criar 1 secret para cada informação, mas como meu objetivo aqui é apenas testar esse serviço optei por armazená-los juntos.
 
-## Etapa 5 - EFS / Lauch Template / Load Balancer / Auto Scaling 
+## 🚀 Etapa 5 - EFS / Lauch Template / Load Balancer / Auto Scaling 
 Essa etapa parece ter muita coisa de uma só vez, e realmente tem, mas é graças ao script que automizou a criação de todos esses recursos.
 O script se chama "aws-infra-template.yaml" vá até o CloudFormation faça upload desse arquivo e siga os seguintes passos.
 
@@ -187,7 +187,7 @@ O script se chama "aws-infra-template.yaml" vá até o CloudFormation faça uplo
 
 A ordem dos parâmetros ficou estranha porque os parâmetros são ordenados em ordem alfabética, também gostaria de colocar em uma ordem que faça mais sentido...
 
-## Resultado
+## ✔️ Resultado
 
 Se tudo foi configurado certo, após a execução da Stack a infraestrutura estará completa, talvez demore uns minutinhos para a instalação dos softwares dentro das instancias terminar, mas quando terminar será possível ver que os target groups ficarão marcados como Health igual na imagem abaixo:
 
