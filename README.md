@@ -1,11 +1,29 @@
-# 🎉 Desafio de infraestrutura na AWS
+# AWS Wordpress Infra
 
 Este projeto tem como objetivo realizar a implantação de uma infraestrutura para uma aplicação wordpress na AWS, o objetivo é utilizar os serviços e ferramentas da AWS para tornar a aplicação e seus dados seguros e com alta disponibilidade. Segue abaixo o diagrama da infraestrutura a ser construída:
 
 <img width="1381" height="607" alt="image" src="https://github.com/user-attachments/assets/74b1015d-c4a6-432a-bbb2-5e28a8694bb8" />
 
-## Cloud Formation
+## ⚙️ Cloud Formation
 Para este projeto utilizei o AWS Cloud Formation para automatizar a criação de alguns recursos, neste guia de instalação vou explicar como preparar a infra estrutura usando o Cloud Formation e também como fazer manualmente caso tenham interesse em saber como a mágica aconteceu.
+
+<details>
+    <summary><h2>Como criar uma Stack no Cloud Formation (YAML)<h2/></summary>
+    
+No console da AWS procure pelo serviço Cloud Formation, ao clicar nele será recepcionado com uma tela semelhante a imagem a abaixo, onde poderá clickar em "Create Stack":
+
+<img width="1302" height="289" alt="image" src="https://github.com/user-attachments/assets/67080af4-e625-4e2c-aefe-92cf424b070d" />
+
+Na tela seguinte selecione a opção "Choose an existing template", depois "Upload a template file", então click em "Choose File" e selecione o template que deseja executar.
+
+<img width="1400" height="690" alt="image" src="https://github.com/user-attachments/assets/5bac44ee-e870-4ff1-9574-323e844ed3a4" />
+
+Avance para a próxima tela, dê um nome para a Stack e preencha os parametros solicitados caso haja.
+
+Feito isso o resto é opcional, recomendo dar uma lida nas opções, mas pode deixar no padrão se quiser.
+
+<img width="1387" height="475" alt="image" src="https://github.com/user-attachments/assets/f1f467ec-02d8-4adc-8c54-920d3e5596ff" />
+</details>
 
 # Etapas do Projeto:
 As seguintes etapas serão necessárias para colocar o projeto para funcionar.
@@ -19,7 +37,10 @@ As seguintes etapas serão necessárias para colocar o projeto para funcionar.
 Obs: É importante lembrar que os recursos criados aqui vão gerar custos, então depois quando não for usar mais lembre de deletar os recursos criados.
 
 ## 1  VPC e Subnets
-    Neste repositório há um arquivo chamado vpc-template.yaml, com ele podemos acessar o serviço do Cloud Formation e solicitar a criação de uma Stack que vai automatizar esse processo.
+Neste repositório há um arquivo chamado vpc-template.yaml, com ele podemos acessar o serviço do Cloud Formation e solicitar a criação de uma Stack usando esse template.
+
+
+<img width="1915" height="164" alt="image" src="https://github.com/user-attachments/assets/58bc150b-68cf-4b1c-9510-f1c97ae5412b" />
 
 ## VPC e Subnets
     
