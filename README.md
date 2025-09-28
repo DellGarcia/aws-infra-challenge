@@ -25,7 +25,7 @@ Feito isso o resto é opcional, recomendo dar uma lida nas opções, mas pode de
 <img width="1387" height="475" alt="image" src="https://github.com/user-attachments/assets/f1f467ec-02d8-4adc-8c54-920d3e5596ff" />
 </details>
 
-# Etapas do Projeto:
+# 📝 Etapas do Projeto:
 As seguintes etapas serão necessárias para colocar o projeto para funcionar.
 
 1. VPC e Subnets
