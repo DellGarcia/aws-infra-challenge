@@ -1,4 +1,4 @@
-# AWS Wordpress Infra
+# ☁️ AWS Wordpress Cloud Infra ☁️
 
 Este projeto tem como objetivo realizar a implantação de uma infraestrutura para uma aplicação wordpress na AWS, o objetivo é utilizar os serviços e ferramentas da AWS para tornar a aplicação e seus dados seguros e com alta disponibilidade. Segue abaixo o diagrama da infraestrutura a ser construída:
 
@@ -42,14 +42,18 @@ Basta dar um nome para a Stack e dar um nome para a VPC que vai ser criada, o te
 
 As subnets criadas vão ser númeradas para facilitar a identificação, para este projeto segui a seguinte regra para a utlização das subnets:
 
-Subnets Públicas 1 e 2:
-    Elas por serem públicas tem um internet gateway que permite acesso a internet, por isso nela anexei apenas os NAT Gatways, Load Balancer e Bastion Host.
+### Subnets Públicas 1 e 2:
+Elas por serem públicas tem um internet gateway que permite acesso a internet, por isso nela serão anexados apenas:
 
-Subnets Privadas 1 e 2:
-    Essas destinei as instancias EC2 que vão executar a aplicação Wordpress, junto a elas estará o Auto Scaling Group.
+1. NAT Gatways
+2. Load Balancer
+3. Bastion Host.
 
-Subnets Privadas 3 e 4: 
-    São voltadas para os dados, ou seja aqui ficara o banco de dados do RDS e os mount targets do EFS.
+### Subnets Privadas 1 e 2:
+Destinadas para as instancias EC2 que vão executar a aplicação Wordpress, junto a elas estará o Auto Scaling Group.
+
+### Subnets Privadas 3 e 4: 
+São voltadas para os dados, ou seja aqui ficará o banco de dados do RDS e os mount targets do EFS.
 
 
 <details>
