@@ -79,7 +79,7 @@ Os parâmetros necessário são ID da VPC e qual IP terá permissão para acessa
 <img width="1396" height="569" alt="image" src="https://github.com/user-attachments/assets/d855a761-ee7d-4363-b88e-7e65217c6afd" />
 
 <details>
-<summary><h2>Security Groups pelo Console<h2/></summary>
+<summary><h3>Security Groups pelo Console<h3/></summary>
     
 Os grupos de segurança são um dos pricinpais componentes para o funcionamento da infrastutura, sem eles basicamente não haveria comunicação entre os diferentes serviços, o ideal é isolar os pricipais recursos em security groups diferentes e só liberar acesso aos grupos necessários e apenas aos recursos necessários.
 
